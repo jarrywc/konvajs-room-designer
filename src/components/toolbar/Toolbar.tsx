@@ -9,9 +9,10 @@ interface ToolbarProps {
   onDuplicate: () => void;
   onSave?: () => void;
   onDiscard?: () => void;
+  children?: React.ReactNode;
 }
 
-export function Toolbar({ onUndo, onRedo, onDelete, onDuplicate, onSave, onDiscard }: ToolbarProps) {
+export function Toolbar({ onUndo, onRedo, onDelete, onDuplicate, onSave, onDiscard, children }: ToolbarProps) {
   const canUndo = useRenderStore((s) => s.canUndo);
   const canRedo = useRenderStore((s) => s.canRedo);
   const dirty = useRenderStore((s) => s.dirty);
@@ -68,6 +69,13 @@ export function Toolbar({ onUndo, onRedo, onDelete, onDuplicate, onSave, onDisca
           Duplicate
         </button>
       </div>
+
+      {children && (
+        <>
+          <div style={separator} />
+          {children}
+        </>
+      )}
 
       <div style={{ flex: 1 }} />
 

@@ -1,4 +1,5 @@
 export type TableShape = 'rectangle' | 'oval' | 'round';
+export type SeatShape = 'circle' | 'square' | 'rounded_rect';
 
 export interface SeatLayout {
   id: string;
@@ -21,6 +22,8 @@ export interface Seat {
   /** Y position relative to the table's origin */
   y: number;
   radius: number;
+  /** True if user has manually repositioned this seat */
+  customPositioned?: boolean;
 }
 
 export interface Table {
@@ -30,11 +33,15 @@ export interface Table {
   y: number;
   rotation: number;
   seatLayoutId: string;
+  /** For freeform-drawn tables, the shape is stored directly (overrides layout) */
+  tableShape?: TableShape;
   seats: Seat[];
   /** Computed width of the table card/shape */
   width: number;
   /** Computed height of the table card/shape */
   height: number;
+  cornerRadius?: number;
+  seatShape?: SeatShape;
 }
 
 export interface TablePreset {

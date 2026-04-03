@@ -8,9 +8,10 @@ interface TableShapeProps {
   width: number;
   height: number;
   isSelected: boolean;
+  cornerRadius?: number;
 }
 
-export function TableShape({ tableShape, width, height, isSelected }: TableShapeProps) {
+export function TableShape({ tableShape, width, height, isSelected, cornerRadius }: TableShapeProps) {
   const tableColor = useSettingsStore((s) => s.tableColor);
   const selectedColor = useSettingsStore((s) => s.selectedColor);
   const fill = isSelected ? selectedColor : tableColor;
@@ -54,7 +55,7 @@ export function TableShape({ tableShape, width, height, isSelected }: TableShape
           fill={fill}
           stroke={stroke}
           strokeWidth={strokeWidth}
-          cornerRadius={4}
+          cornerRadius={cornerRadius ?? 4}
           opacity={0.6}
         />
       );

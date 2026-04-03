@@ -10,6 +10,7 @@ export interface ElementCatalogEntry {
   defaultStroke: string;
   defaultStrokeWidth: number;
   isExclusion: boolean;
+  defaultCornerRadius?: number;
 }
 
 export const ROOM_ELEMENT_CATALOG: ElementCatalogEntry[] = [
@@ -23,6 +24,7 @@ export const ROOM_ELEMENT_CATALOG: ElementCatalogEntry[] = [
     defaultStroke: '#2D3748',
     defaultStrokeWidth: 2,
     isExclusion: true,
+    defaultCornerRadius: 4,
   },
   {
     type: 'bar',
@@ -100,6 +102,17 @@ export const ROOM_ELEMENT_CATALOG: ElementCatalogEntry[] = [
     defaultStroke: '#2C5282',
     defaultStrokeWidth: 1,
     isExclusion: true,
+  },
+  {
+    type: 'text',
+    label: 'Text',
+    icon: 'T',
+    defaultWidth: 150,
+    defaultHeight: 30,
+    defaultFill: 'transparent',
+    defaultStroke: 'transparent',
+    defaultStrokeWidth: 0,
+    isExclusion: false,
   },
 ];
 

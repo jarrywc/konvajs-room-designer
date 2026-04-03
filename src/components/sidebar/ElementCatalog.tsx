@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { ROOM_ELEMENT_CATALOG } from '../../presets/element-catalog';
 import type { RoomElementType } from '../../types/room';
 
@@ -6,12 +7,19 @@ interface ElementCatalogProps {
 }
 
 export function ElementCatalog({ onAddElement }: ElementCatalogProps) {
+  const handleDragStart = useCallback((e: React.DragEvent, type: RoomElementType) => {
+    e.dataTransfer.setData('application/room-designer-element', type);
+    e.dataTransfer.effectAllowed = 'copy';
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={sectionLabel}>Room Elements</div>
       {ROOM_ELEMENT_CATALOG.map((entry) => (
         <button
           key={entry.type}
+          draggable
+          onDragStart={(e) => handleDragStart(e, entry.type)}
           onClick={() => onAddElement(entry.type)}
           style={catalogBtn}
         >
@@ -44,7 +52,7 @@ const catalogBtn: React.CSSProperties = {
   background: '#F7FAFC',
   border: '1px solid #E2E8F0',
   borderRadius: 4,
-  cursor: 'pointer',
+  cursor: 'grab',
   textAlign: 'left',
   fontSize: 12,
 };

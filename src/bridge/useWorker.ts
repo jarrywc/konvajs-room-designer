@@ -47,6 +47,15 @@ export function useWorker() {
     [syncState]
   );
 
+  const addFreeformTable = useCallback(
+    async (params: Parameters<DesignerWorkerAPI['addFreeformTable']>[0]) => {
+      if (!apiRef.current) return;
+      const state = await apiRef.current.addFreeformTable(params);
+      syncState(state);
+    },
+    [syncState]
+  );
+
   const moveTable = useCallback(
     async (tableId: string, x: number, y: number, snap: boolean) => {
       if (!apiRef.current) return;
@@ -65,10 +74,37 @@ export function useWorker() {
     [syncState]
   );
 
+  const updateTable = useCallback(
+    async (tableId: string, changes: Parameters<DesignerWorkerAPI['updateTable']>[1]) => {
+      if (!apiRef.current) return;
+      const state = await apiRef.current.updateTable(tableId, changes);
+      syncState(state);
+    },
+    [syncState]
+  );
+
+  const moveSeat = useCallback(
+    async (tableId: string, seatId: string, x: number, y: number) => {
+      if (!apiRef.current) return;
+      const state = await apiRef.current.moveSeat(tableId, seatId, x, y);
+      syncState(state);
+    },
+    [syncState]
+  );
+
   const addElement = useCallback(
     async (type: Parameters<DesignerWorkerAPI['addElement']>[0], position: { x: number; y: number }) => {
       if (!apiRef.current) return;
       const state = await apiRef.current.addElement(type, position);
+      syncState(state);
+    },
+    [syncState]
+  );
+
+  const addFigure = useCallback(
+    async (figure: Parameters<DesignerWorkerAPI['addFigure']>[0]) => {
+      if (!apiRef.current) return;
+      const state = await apiRef.current.addFigure(figure);
       syncState(state);
     },
     [syncState]
@@ -163,9 +199,13 @@ export function useWorker() {
     api,
     initialize,
     addTableFromPreset,
+    addFreeformTable,
     moveTable,
     rotateTable,
+    updateTable,
+    moveSeat,
     addElement,
+    addFigure,
     updateElement,
     removeItems,
     duplicateItems,

@@ -7,7 +7,14 @@ export type RoomElementType =
   | 'column'
   | 'podium'
   | 'av_equipment'
-  | 'custom';
+  | 'custom'
+  | 'text'
+  // Drawn figures
+  | 'figure_rect'
+  | 'figure_ellipse'
+  | 'figure_line'
+  | 'figure_polygon'
+  | 'figure_freehand';
 
 export interface RoomElement {
   id: string;
@@ -27,6 +34,9 @@ export interface RoomElement {
   zIndex: number;
   config?: Record<string, unknown>;
   sortOrder: number;
+  /** Flat array of [x,y,...] points relative to element origin — used by line, polygon, freehand */
+  points?: number[];
+  cornerRadius?: number;
 }
 
 export interface RoomLayout {

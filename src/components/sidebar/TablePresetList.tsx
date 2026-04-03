@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { TABLE_PRESETS } from '../../presets/table-presets';
 import { getSeatLayout } from '../../presets/seat-layouts';
 
@@ -6,6 +7,11 @@ interface TablePresetListProps {
 }
 
 export function TablePresetList({ onAddTable }: TablePresetListProps) {
+  const handleDragStart = useCallback((e: React.DragEvent, presetId: string) => {
+    e.dataTransfer.setData('application/room-designer-table', presetId);
+    e.dataTransfer.effectAllowed = 'copy';
+  }, []);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       <div style={sectionLabel}>Tables</div>
@@ -14,6 +20,8 @@ export function TablePresetList({ onAddTable }: TablePresetListProps) {
         return (
           <button
             key={preset.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, preset.id)}
             onClick={() => onAddTable(preset.id)}
             style={presetBtn}
           >
@@ -48,7 +56,7 @@ const presetBtn: React.CSSProperties = {
   background: '#F7FAFC',
   border: '1px solid #E2E8F0',
   borderRadius: 4,
-  cursor: 'pointer',
+  cursor: 'grab',
   textAlign: 'left',
   fontSize: 12,
 };

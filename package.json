@@ -1,6 +1,20 @@
 {
   "name": "konvajs-room-designer",
   "version": "0.1.0",
+  "description": "A React room designer component built with Konva.js",
+  "author": "Jarred Cain",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jarredcain/konvajs-room-designer.git"
+  },
+  "keywords": [
+    "react",
+    "konva",
+    "room-designer",
+    "floor-plan",
+    "canvas"
+  ],
   "type": "module",
   "main": "dist/room-designer.js",
   "types": "dist/index.d.ts",
@@ -18,8 +32,10 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
   },
+  "sideEffects": false,
   "peerDependencies": {
     "konva": "^9.0.0",
     "react": "^18.0.0",
@@ -41,6 +57,7 @@
     "react-konva": "^18.2.10",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",
+    "vite-plugin-dts": "^4.5.4",
     "vitest": "^2.1.8"
   }
 }

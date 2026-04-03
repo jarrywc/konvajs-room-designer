@@ -12,16 +12,17 @@ import { TableLabel } from './TableLabel';
 interface TableGroupProps {
   table: Table;
   onDragEnd?: (tableId: string, x: number, y: number) => void;
+  onSeatDragEnd?: (tableId: string, seatId: string, x: number, y: number) => void;
 }
 
-export function TableGroup({ table, onDragEnd }: TableGroupProps) {
+export function TableGroup({ table, onDragEnd, onSeatDragEnd }: TableGroupProps) {
   const selectedIds = useSelectionStore((s) => s.selectedIds);
   const select = useSelectionStore((s) => s.select);
   const toggleSelect = useSelectionStore((s) => s.toggleSelect);
   const isSelected = selectedIds.has(table.id);
 
   const layout = getSeatLayout(table.seatLayoutId);
-  const tableShape = layout?.tableShape ?? 'round';
+  const tableShape = table.tableShape ?? layout?.tableShape ?? 'round';
 
   // Position at center of table dimensions
   const centerX = table.x + table.width / 2;
@@ -53,6 +54,15 @@ export function TableGroup({ table, onDragEnd }: TableGroupProps) {
     [table.id, table.width, table.height, onDragEnd]
   );
 
+  const handleSeatDragEnd = useCallback(
+    (seatId: string, x: number, y: number) => {
+      if (onSeatDragEnd) {
+        onSeatDragEnd(table.id, seatId, x, y);
+      }
+    },
+    [table.id, onSeatDragEnd]
+  );
+
   return (
     <Group
       x={centerX}
@@ -69,9 +79,16 @@ export function TableGroup({ table, onDragEnd }: TableGroupProps) {
         width={table.width}
         height={table.height}
         isSelected={isSelected}
+        cornerRadius={table.cornerRadius}
       />
       {table.seats.map((seat) => (
-        <SeatNode key={seat.id} seat={seat} />
+        <SeatNode
+          key={seat.id}
+          seat={seat}
+          seatShape={table.seatShape}
+          draggable={!!onSeatDragEnd}
+          onSeatDragEnd={onSeatDragEnd ? handleSeatDragEnd : undefined}
+        />
       ))}
       <TableLabel table={table} />
     </Group>

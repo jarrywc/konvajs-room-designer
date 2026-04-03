@@ -1,5 +1,5 @@
 import type { RoomLayout, RoomElement, RoomElementType } from './room';
-import type { Table, SeatLayout } from './table';
+import type { Table, SeatLayout, TableShape } from './table';
 import type { Point, AlignAxis, DistributeAxis, ArrangePattern } from './geometry';
 
 /** The full state returned by the worker after mutations */
@@ -18,11 +18,34 @@ export interface DesignerWorkerAPI {
 
   // Tables
   addTableFromPreset(presetId: string, position: Point): Promise<WorkerState>;
+  addFreeformTable(params: {
+    tableShape: TableShape;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    seatGaps?: { left: number; right: number; top: number; bottom: number };
+  }): Promise<WorkerState>;
   moveTable(tableId: string, x: number, y: number, snap: boolean): Promise<WorkerState>;
   rotateTable(tableId: string, angle: number): Promise<WorkerState>;
+  updateTable(tableId: string, changes: Partial<Table>): Promise<WorkerState>;
+  moveSeat(tableId: string, seatId: string, x: number, y: number): Promise<WorkerState>;
 
   // Room elements
   addElement(type: RoomElementType, position: Point): Promise<WorkerState>;
+  addFigure(figure: {
+    elementType: RoomElementType;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    points?: number[];
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: number;
+    cornerRadius?: number;
+    config?: Record<string, unknown>;
+  }): Promise<WorkerState>;
   updateElement(id: string, changes: Partial<RoomElement>): Promise<WorkerState>;
 
   // Shared

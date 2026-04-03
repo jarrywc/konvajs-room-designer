@@ -1,4 +1,4 @@
-import { Group, Rect, Circle, Text } from 'react-konva';
+import { Group, Rect, Circle, Ellipse, Line, Text } from 'react-konva';
 import type Konva from 'konva';
 import { useCallback } from 'react';
 import type { RoomElement } from '../../types/room';
@@ -7,9 +7,10 @@ import { useSelectionStore } from '../../store/selection-store';
 interface GenericElementProps {
   element: RoomElement;
   onDragEnd?: (id: string, x: number, y: number) => void;
+  onTextDblClick?: (id: string) => void;
 }
 
-export function GenericElement({ element, onDragEnd }: GenericElementProps) {
+export function GenericElement({ element, onDragEnd, onTextDblClick }: GenericElementProps) {
   const selectedIds = useSelectionStore((s) => s.selectedIds);
   const select = useSelectionStore((s) => s.select);
   const toggleSelect = useSelectionStore((s) => s.toggleSelect);
@@ -36,7 +37,15 @@ export function GenericElement({ element, onDragEnd }: GenericElementProps) {
     [element.id, onDragEnd]
   );
 
-  const isCircular = element.elementType === 'column';
+  const handleDblClick = useCallback(() => {
+    if (element.elementType === 'text' && onTextDblClick) {
+      onTextDblClick(element.id);
+    }
+  }, [element.id, element.elementType, onTextDblClick]);
+
+  const selStroke = isSelected ? '#4299E1' : element.strokeColor;
+  const selStrokeWidth = isSelected ? Math.max(element.strokeWidth, 2) : element.strokeWidth;
+  const fill = element.fillColor === 'transparent' ? undefined : element.fillColor;
 
   return (
     <Group
@@ -48,28 +57,12 @@ export function GenericElement({ element, onDragEnd }: GenericElementProps) {
       onClick={handleClick}
       onTap={handleClick}
       onDragEnd={handleDragEnd}
+      onDblClick={handleDblClick}
+      onDblTap={handleDblClick}
       name={`element-${element.id}`}
     >
-      {isCircular ? (
-        <Circle
-          x={element.width / 2}
-          y={element.height / 2}
-          radius={element.width / 2}
-          fill={element.fillColor}
-          stroke={isSelected ? '#4299E1' : element.strokeColor}
-          strokeWidth={isSelected ? 2 : element.strokeWidth}
-        />
-      ) : (
-        <Rect
-          width={element.width}
-          height={element.height}
-          fill={element.fillColor}
-          stroke={isSelected ? '#4299E1' : element.strokeColor}
-          strokeWidth={isSelected ? 2 : element.strokeWidth}
-          cornerRadius={element.elementType === 'stage' ? 4 : 2}
-        />
-      )}
-      {element.label && (
+      {renderShape(element, selStroke, selStrokeWidth, fill)}
+      {element.label && !isFigureType(element.elementType) && element.elementType !== 'text' && (
         <Text
           x={0}
           y={0}
@@ -85,4 +78,122 @@ export function GenericElement({ element, onDragEnd }: GenericElementProps) {
       )}
     </Group>
   );
+}
+
+function isFigureType(type: string): boolean {
+  return type.startsWith('figure_');
+}
+
+function renderShape(
+  el: RoomElement,
+  stroke: string,
+  strokeWidth: number,
+  fill: string | undefined
+) {
+  switch (el.elementType) {
+    case 'text': {
+      const cfg = el.config ?? {};
+      return (
+        <Text
+          x={0}
+          y={0}
+          width={el.width}
+          height={el.height}
+          text={(cfg.text as string) ?? 'Text'}
+          fontSize={(cfg.fontSize as number) ?? 16}
+          fontFamily={(cfg.fontFamily as string) ?? 'sans-serif'}
+          fontStyle={(cfg.fontWeight as string) ?? 'normal'}
+          fill={(cfg.textColor as string) ?? '#2D3748'}
+          align={(cfg.align as string) ?? 'center'}
+          verticalAlign="middle"
+        />
+      );
+    }
+
+    case 'column':
+      return (
+        <Circle
+          x={el.width / 2}
+          y={el.height / 2}
+          radius={el.width / 2}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+
+    case 'figure_rect':
+      return (
+        <Rect
+          width={el.width}
+          height={el.height}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          cornerRadius={el.cornerRadius ?? 0}
+        />
+      );
+
+    case 'figure_ellipse':
+      return (
+        <Ellipse
+          x={el.width / 2}
+          y={el.height / 2}
+          radiusX={el.width / 2}
+          radiusY={el.height / 2}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+        />
+      );
+
+    case 'figure_line':
+      return (
+        <Line
+          points={el.points ?? [0, 0, el.width, el.height]}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          lineCap="round"
+          hitStrokeWidth={Math.max(strokeWidth, 10)}
+        />
+      );
+
+    case 'figure_polygon':
+      return (
+        <Line
+          points={el.points ?? []}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          fill={fill}
+          closed
+          lineJoin="round"
+        />
+      );
+
+    case 'figure_freehand':
+      return (
+        <Line
+          points={el.points ?? []}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          lineCap="round"
+          lineJoin="round"
+          tension={0.3}
+          hitStrokeWidth={Math.max(strokeWidth, 10)}
+        />
+      );
+
+    default:
+      // Standard room elements (stage, bar, dance_floor, wall, door, podium, av, custom)
+      return (
+        <Rect
+          width={el.width}
+          height={el.height}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={strokeWidth}
+          cornerRadius={el.cornerRadius ?? (el.elementType === 'stage' ? 4 : 2)}
+        />
+      );
+  }
 }

@@ -1,5 +1,5 @@
 import type { RoomLayout, RoomElement, RoomElementType } from '../types/room';
-import type { Table, SeatLayout } from '../types/table';
+import type { Table, SeatLayout, TableShape } from '../types/table';
 import type { Point, AlignAxis, DistributeAxis, ArrangePattern } from '../types/geometry';
 import type { WorkerState } from '../types/worker-messages';
 import { generateId } from '../utils/id';
@@ -8,6 +8,7 @@ import { SEAT_LAYOUTS } from '../presets/seat-layouts';
 import { getTablePreset } from '../presets/table-presets';
 import { getCatalogEntry } from '../presets/element-catalog';
 import { computeSeatPositions } from './geometry/seat-positions';
+import { computeFreeformSeats, type SeatGapOptions } from './geometry/freeform-seats';
 import { snapPosition } from './geometry/snap';
 import { alignBoxes, distributeBoxes, arrangeBoxes } from './geometry/alignment';
 import { tableBBox, elementBBox } from './geometry/bounds';
@@ -61,7 +62,11 @@ export class DesignerState {
 
   private isDirty(): boolean {
     if (this.savedSnapshot === null) return this.tables.length > 0 || this.room.elements.length > 0;
-    return JSON.stringify(this.snapshot()) !== this.savedSnapshot;
+    return this.dataFingerprint() !== this.savedSnapshot;
+  }
+
+  private dataFingerprint(): string {
+    return JSON.stringify({ room: this.room, tables: this.tables });
   }
 
   // ── Initialization ──────────────────────────────────────────────
@@ -71,7 +76,7 @@ export class DesignerState {
     if (tables) this.tables = tables;
     if (seatLayouts) this.seatLayouts = [...SEAT_LAYOUTS, ...seatLayouts];
     this.history.clear();
-    this.savedSnapshot = JSON.stringify(this.snapshot());
+    this.savedSnapshot = this.dataFingerprint();
     this.tableCounter = this.tables.length;
     return this.snapshot();
   }
@@ -105,6 +110,35 @@ export class DesignerState {
     return this.snapshot();
   }
 
+  addFreeformTable(params: {
+    tableShape: TableShape;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    seatGaps?: SeatGapOptions;
+  }): WorkerState {
+    this.pushUndo();
+    this.tableCounter++;
+
+    const seats = computeFreeformSeats(params.tableShape, params.width, params.height, params.seatGaps);
+    const table: Table = {
+      id: generateId(),
+      name: `Table ${this.tableCounter}`,
+      x: Math.round(params.x),
+      y: Math.round(params.y),
+      rotation: 0,
+      seatLayoutId: 'freeform',
+      tableShape: params.tableShape,
+      seats,
+      width: Math.round(params.width),
+      height: Math.round(params.height),
+    };
+
+    this.tables = [...this.tables, table];
+    return this.snapshot();
+  }
+
   moveTable(tableId: string, x: number, y: number, snap: boolean): WorkerState {
     const idx = this.tables.findIndex((t) => t.id === tableId);
     if (idx === -1) return this.snapshot();
@@ -123,6 +157,31 @@ export class DesignerState {
     this.pushUndo();
     const updated = { ...this.tables[idx]!, rotation: Math.round(angle * 100) / 100 };
     this.tables = this.tables.map((t, i) => (i === idx ? updated : t));
+    return this.snapshot();
+  }
+
+  updateTable(tableId: string, changes: Partial<Table>): WorkerState {
+    const idx = this.tables.findIndex((t) => t.id === tableId);
+    if (idx === -1) return this.snapshot();
+
+    this.pushUndo();
+    const updated = { ...this.tables[idx]!, ...changes };
+    this.tables = this.tables.map((t, i) => (i === idx ? updated : t));
+    return this.snapshot();
+  }
+
+  moveSeat(tableId: string, seatId: string, x: number, y: number): WorkerState {
+    const idx = this.tables.findIndex((t) => t.id === tableId);
+    if (idx === -1) return this.snapshot();
+
+    this.pushUndo();
+    const table = this.tables[idx]!;
+    const updatedSeats = table.seats.map((s) =>
+      s.id === seatId ? { ...s, x: Math.round(x), y: Math.round(y), customPositioned: true } : s
+    );
+    this.tables = this.tables.map((t, i) =>
+      i === idx ? { ...t, seats: updatedSeats } : t
+    );
     return this.snapshot();
   }
 
@@ -149,6 +208,53 @@ export class DesignerState {
       isExclusion: catalog.isExclusion,
       zIndex: this.room.elements.length,
       sortOrder: this.room.elements.length,
+      cornerRadius: catalog.defaultCornerRadius,
+      config: type === 'text' ? {
+        text: 'Text',
+        fontSize: 16,
+        fontFamily: 'sans-serif',
+        fontWeight: 'normal',
+        textColor: '#2D3748',
+        align: 'center',
+      } : undefined,
+    };
+
+    this.room = { ...this.room, elements: [...this.room.elements, el] };
+    return this.snapshot();
+  }
+
+  addFigure(figure: {
+    elementType: RoomElementType;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    points?: number[];
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: number;
+    cornerRadius?: number;
+    config?: Record<string, unknown>;
+  }): WorkerState {
+    this.pushUndo();
+    const el: RoomElement = {
+      id: generateId(),
+      elementType: figure.elementType,
+      x: figure.x,
+      y: figure.y,
+      width: figure.width,
+      height: figure.height,
+      rotation: 0,
+      fillColor: figure.fillColor,
+      strokeColor: figure.strokeColor,
+      strokeWidth: figure.strokeWidth,
+      opacity: 1,
+      isExclusion: false,
+      zIndex: this.room.elements.length,
+      sortOrder: this.room.elements.length,
+      points: figure.points,
+      cornerRadius: figure.cornerRadius,
+      config: figure.config,
     };
 
     this.room = { ...this.room, elements: [...this.room.elements, el] };
@@ -191,10 +297,14 @@ export class DesignerState {
     const newTables = this.tables
       .filter((t) => idSet.has(t.id))
       .map((t) => {
-        const { seats } = computeSeatPositions(
-          this.seatLayouts.find((l) => l.id === t.seatLayoutId) ?? this.seatLayouts[0]!
-        );
-        return { ...t, id: generateId(), x: t.x + offset, y: t.y + offset, seats };
+        let newSeats;
+        if (t.seatLayoutId === 'freeform') {
+          newSeats = t.seats.map((s) => ({ ...s, id: generateId() }));
+        } else {
+          const layout = this.seatLayouts.find((l) => l.id === t.seatLayoutId) ?? this.seatLayouts[0]!;
+          newSeats = computeSeatPositions(layout).seats;
+        }
+        return { ...t, id: generateId(), x: t.x + offset, y: t.y + offset, seats: newSeats };
       });
 
     const newElements = this.room.elements

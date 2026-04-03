@@ -16,6 +16,10 @@ const api: DesignerWorkerAPI = {
     return state.addTableFromPreset(presetId, position);
   },
 
+  async addFreeformTable(params: Parameters<DesignerWorkerAPI['addFreeformTable']>[0]) {
+    return state.addFreeformTable(params);
+  },
+
   async moveTable(tableId: string, x: number, y: number, snap: boolean) {
     return state.moveTable(tableId, x, y, snap);
   },
@@ -24,8 +28,20 @@ const api: DesignerWorkerAPI = {
     return state.rotateTable(tableId, angle);
   },
 
+  async updateTable(tableId: string, changes: Parameters<DesignerWorkerAPI['updateTable']>[1]) {
+    return state.updateTable(tableId, changes);
+  },
+
+  async moveSeat(tableId: string, seatId: string, x: number, y: number) {
+    return state.moveSeat(tableId, seatId, x, y);
+  },
+
   async addElement(type: RoomElementType, position: Point) {
     return state.addElement(type, position);
+  },
+
+  async addFigure(figure: Parameters<DesignerWorkerAPI['addFigure']>[0]) {
+    return state.addFigure(figure);
   },
 
   async updateElement(id: string, changes: Partial<RoomElement>) {
